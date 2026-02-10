@@ -297,6 +297,8 @@ To disable checkpoint resumption, use `--no_resume` flag in `src/run_retrieval.p
 - Combined mode uses weighted averaging: `alpha * text_emb + (1 - alpha) * image_emb`
 - All embeddings are normalized before and after averaging
 
+## Note on data ownership and licensing
 
-NOTE: The dataset is released under CC BY 4.0 [see DATA_LICENSE.TXT]. Note that although we verified that the images within the dataset were listed as having a CC BY 2.0 license, we make no representations or warranties regarding the license status of each image. You should verify your ability to use each image for yourself.
+The dataset is released under CC BY 4.0 [see DATA_LICENSE.TXT]. Note that although we verified that the images within the dataset were listed as having a CC BY 2.0 license, we make no representations or warranties regarding the license status of each image. You should verify your ability to use each image for yourself.
 
+We re-host the images on the Pinterest CDNs to avoid missing links due to deletion/URL failures. Any image with a particular signature's original author/license can be found in the sig_to_metadata2.json where each signature is a key in the PinPoint index.
