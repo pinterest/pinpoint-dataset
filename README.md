@@ -1,5 +1,9 @@
 # PinPoint Dataset
 
+Code + dataset for the paper "PinPoint: Evaluation of Composed Image Retrieval with Explicit Negatives, Multi-Image Queries, and Paraphrase Testing"
+
+![image](image.png)
+
 ## Pinpoint Dataset Retrieval Framework
 
 This repository provides a framework for evaluating retrieval methods on the Pinpoint dataset. The code includes a complete implementation using MetaCLIP2 as an example, but the framework is designed to be extensible to any retrieval method.
