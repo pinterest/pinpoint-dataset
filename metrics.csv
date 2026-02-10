@@ -1,0 +1,2 @@
+model,precision@1,precision@10,NegRecall@10,mAP@10,mAP@10_noNeg,delta_mAP@10_noNeg,pct_increase_mAP@10_noNeg,ling_sens_range,total_queries,mAP@1,mAP@5,mAP@50,mAP@1_noNeg,mAP@5_noNeg,mAP@50_noNeg,NegRecall@1,NegRecall@5,NegRecall@50,precision@5,precision@50,recall@1,recall@5,recall@10,recall@50,ling_sens_std
+metaclip2_combined_reranked_standardized,0.1595,0.0902,0.0396,0.0870,0.0894,0.0024,0.0271,0.1495,7773,0.1595,0.1027,0.0879,0.1639,0.1058,0.0897,0.0422,0.0400,0.0625,0.1209,0.0280,0.0243,0.0791,0.1112,0.1578,0.0536
