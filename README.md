@@ -1,6 +1,6 @@
 # PinPoint Dataset
 
-Code + dataset for the paper "PinPoint: Evaluation of Composed Image Retrieval with Explicit Negatives, Multi-Image Queries, and Paraphrase Testing"
+Code + dataset for the CVPR 2026 paper "PinPoint: Evaluation of Composed Image Retrieval with Explicit Negatives, Multi-Image Queries, and Paraphrase Testing"
 
 ![image](image.png)
 
