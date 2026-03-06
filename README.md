@@ -1,308 +1,271 @@
 # PinPoint Dataset
 
-Code + dataset for the CVPR 2026 paper "PinPoint: Evaluation of Composed Image Retrieval with Explicit Negatives, Multi-Image Queries, and Paraphrase Testing"
+Code + dataset for the CVPR 2026 paper ["PinPoint: Evaluation of Composed Image Retrieval with Explicit Negatives, Multi-Image Queries, and Paraphrase Testing"](https://arxiv.org/abs/2603.04598)
 
 ![image](image.png)
 
-## Note on data ownership and licensing
+## Dataset Statistics
 
-The dataset is released under CC BY 4.0 [see DATA_LICENSE.TXT]. Note that although we verified that the images within the dataset were listed as having a CC BY 2.0 license, we make no representations or warranties regarding the license status of each image. You should verify your ability to use each image for yourself.
+| Statistic | Value |
+|-----------|-------|
+| Total Queries | 7,635 |
+| Corpus Images | 109,599 |
+| Relevance Judgments | 329K |
+| Query Categories | 23 |
+| Avg. Positive Answers per Query | 9.1 |
+| Instruction Paraphrases per Query | 6 |
+| Multi-Image Queries | 13.4% |
 
-We re-host the images on the Pinterest CDNs to avoid missing links due to deletion/URL failures. All the attribution, ownership details and original license of the images in this dataset can be found in `image_attribution.json`
+**What makes PinPoint unique:**
+- **Multiple Correct Answers**: Unlike single-answer benchmarks, each query has ~9 relevant results on average
+- **Explicit Hard Negatives**: Each query includes challenging negatives that models commonly confuse with positives
+- **Paraphrase Robustness**: 6 instruction variants per query to measure linguistic sensitivity (models show up to 25% variation!)
+- **Multi-Image Queries**: 13.4% of queries use two reference images for complex composition
+- **Demographic Metadata**: Supports fairness evaluation across demographic groups
 
-## Pinpoint Dataset Retrieval Framework
+## Quick Start: Load and Explore the Data
 
-This repository provides a framework for evaluating retrieval methods on the Pinpoint dataset. The code includes a complete implementation using MetaCLIP2 as an example, but the framework is designed to be extensible to any retrieval method.
+```python
+import pandas as pd
 
-### Project Structure
+# Load the dataset
+df = pd.read_parquet("pinpoint_licensed.parquet")
 
-```
-pinpoint-dataset/
-├── src/                    # Main source code
-│   ├── build_faiss_index.py    # Build FAISS index from image corpus
-│   ├── run_retrieval.py         # Run retrieval on queries
-│   ├── evaluate.py              # Evaluate retrieval results
-│   └── utils/                   # Utility modules
-│       ├── image_loader.py       # Image loading/downloading
-│       ├── model_loader.py       # Model loading utilities
-│       ├── faiss_utils.py        # FAISS index operations
-│       ├── metrics.py            # Evaluation metrics
-│       ├── data_utils.py         # Data processing utilities
-│       ├── dataset.py            # Dataset classes
-│       └── embeddings.py         # Embedding generation
-├── index_signatures.txt         # Image signatures for index
-├── pinpoint_metadata.parquet    # Query corpus and ground truth
-├── requirements.txt             # Python dependencies
-├── setup.sh                     # Automated setup script
-└── README.md                    # This file
-```
-
-## Overview
-
-This repository provides a complete framework for building retrieval systems and evaluating them on the Pinpoint dataset. The code includes:
-
-1. **`src/build_faiss_index.py`**: Builds a FAISS index from a corpus of images (MetaCLIP2 example)
-2. **`src/run_retrieval.py`**: Performs retrieval on a query corpus using the FAISS index (MetaCLIP2 example)
-3. **`src/evaluate.py`**: Evaluates retrieval results against ground truth (works with any method)
-
-All utility functions are organized in the `src/utils/` directory for better code organization and reusability.
-
-**Note**: The MetaCLIP2 implementation is provided as an example. The framework is designed to be extensible - you can replace the embedding model and retrieval logic to test any other retrieval method while using the same evaluation pipeline.
-
-## Installation
-
-### Quick Install
-
-For basic installation, you can use the provided `requirements.txt`:
-
-```bash
-pip install -r requirements.txt
+# View a sample query
+sample = df.iloc[0]
+print(f"Query ID: {sample['query_id']}")
+print(f"Instruction: {sample['instruction']}")
+print(f"Query Image: {sample['query_image_signature']}")
+print(f"Positive candidates: {sample['positive_candidates'][:3]}...")  # First 3
+print(f"Negative candidates: {sample['negative_candidates'][:3]}...")  # First 3
 ```
 
-**Note**: Some packages require special installation:
+## Viewing Images
 
-1. **PyTorch**: Install based on your system (CUDA vs CPU)
-   ```bash
-   # For CUDA 11.8 (GPU support)
-   pip install torch torchvision --index-url https://download.pytorch.org/whl/cu118
-   
-   # For CPU only
-   pip install torch torchvision --index-url https://download.pytorch.org/whl/cpu
-   ```
+Images are hosted on Pinterest CDN. To view any image signature:
 
-2. **OpenCLIP**: Install from GitHub main branch for MetaCLIP2 support
-   ```bash
-   pip install --upgrade "open-clip-torch @ git+https://github.com/mlfoundations/open_clip.git@main"
-   ```
+```python
+def signature_to_url(signature):
+    """Convert a Pinterest signature to a viewable image URL."""
+    return f"https://i.pinimg.com/736x/{signature[:2]}/{signature[2:4]}/{signature[4:6]}/{signature}.jpg"
 
-3. **FAISS**: Choose based on your system
-   ```bash
-   # For GPU support
-   pip install faiss-gpu
-   
-   # For CPU only
-   pip install faiss-cpu
-   ```
-
-### Automated Setup Script
-
-For a complete automated setup, you can use the provided setup script:
-
-```bash
-bash setup.sh
+# Example
+sig = "afd9ded10f1efd368cd8294da0bb34ce"
+url = signature_to_url(sig)
+# https://i.pinimg.com/736x/af/d9/de/afd9ded10f1efd368cd8294da0bb34ce.jpg
 ```
 
-This script will:
-- Check Python and pip availability
-- Create a virtual environment (optional)
-- Install PyTorch (GPU or CPU based on system)
-- Install OpenCLIP from GitHub main branch
-- Install FAISS (GPU or CPU based on system)
-- Install all remaining requirements
-- Verify all installations
+---
 
-**Note**: The setup script works on Linux/macOS. For Windows, use the manual installation steps above.
+## Evaluate Your Model
 
-### Manual Installation
+**Most researchers will use this section.** If you have your own retrieval system, skip directly to evaluation.
 
-If you prefer manual installation:
+### Step 1: Generate Results in the Required Format
 
-```bash
-# Core dependencies
-pip install torch torchvision  # See note above for CUDA/CPU
-pip install --upgrade "open-clip-torch @ git+https://github.com/mlfoundations/open_clip.git@main"
-pip install faiss-cpu  # or faiss-gpu for GPU support
+Your results file must be a JSON file with this structure:
 
-# Additional packages
-pip install numpy pandas pyarrow pillow requests tqdm
-```
-
-## Files
-
-This repository contains:
-
-**Code:**
-- `src/build_faiss_index.py`: Script to build FAISS index from image corpus
-- `src/run_retrieval.py`: Script to perform retrieval on queries
-- `src/evaluate.py`: Script to evaluate retrieval results
-
-**Dataset Files:**
-- `index_signatures.txt`: Image signatures for building the FAISS index
-- `pinpoint_metadata.parquet`: Query corpus and ground truth data
-
-**Configuration:**
-- `requirements.txt`: Python package dependencies
-- `setup.sh`: Automated setup script
-- `LICENSE`: Apache 2.0 license
-
-## Dataset
-
-This repository includes the Pinpoint dataset files:
-
-- **`index_signatures.txt`**: Contains image signatures (one per line) for building the FAISS index. These are Pinterest-style hex signatures that will be automatically converted to image URLs.
-- **`pinpoint_metadata.parquet`**: Contains the query corpus and ground truth data with the following columns:
-  - `query_id`: Unique identifier for each query
-  - `query_image_signature`: Image identifier (Pinterest signature)
-  - `query_image_signature2`: Optional second image (for multi-image queries)
-  - `instruction`: Text instruction for the query
-  - `positive_candidates`: List of relevant item identifiers
-  - `negative_candidates`: List of negative item identifiers
-  - Additional metadata columns (token_count, length_category, query_category, etc.)
-
-## Quick Start
-
-With the provided dataset files, you can run the complete pipeline with minimal arguments:
-
-```bash
-# Step 1: Build FAISS index (uses index_signatures.txt by default)
-python src/build_faiss_index.py --output_dir ./indices/metaclip2
-
-# Step 2: Run retrieval (uses pinpoint_metadata.parquet by default)
-python src/run_retrieval.py --index_dir ./indices/metaclip2 --output_file results.json
-
-# Step 3: Evaluate results (uses pinpoint_metadata.parquet as ground truth by default)
-python src/evaluate.py --results results.json --ground_truth pinpoint_metadata.parquet --output metrics.csv
-```
-
-## Usage
-
-### Step 1: Build FAISS Index
-
-Build the index using the provided `index_signatures.txt` file:
-
-```bash
-python src/build_faiss_index.py \
-    --image_list index_signatures.txt \
-    --output_dir ./indices/metaclip2 \
-    --batch_size 32 \
-    --num_workers 4
-```
-
-**Note**: You can also use your own image list file. The file should contain one image path/URL/signature per line. Supported formats:
-- Local file paths: `/path/to/image.jpg`
-- HTTP/HTTPS URLs: `https://example.com/image.jpg`
-- Pinterest-style signatures: 32+ character hex strings (automatically converted to Pinterest CDN URLs)
-
-This will create:
-- `index.faiss`: FAISS index file
-- `identifiers.npy`: Array of image identifiers
-- `metadata.json`: Index metadata
-
-### Step 2: Run Retrieval
-
-Run retrieval using the provided `pinpoint_metadata.parquet` file:
-
-```bash
-python src/run_retrieval.py \
-    --query_file pinpoint_metadata.parquet \
-    --index_dir ./indices/metaclip2 \
-    --output_file results.json \
-    --mode combined \
-    --top_k 50 \
-    --alpha 0.8
-```
-
-**Note**: You can also use your own query file. The Parquet file must contain columns:
-- `query_id`: Unique identifier for each query
-- `query_image_signature`: Image identifier/path (required for `combined`/`image_only` modes)
-- `query_image_signature2`: Optional second image (for multi-image queries)
-- `instruction`: Text instruction (required for `combined`/`text_only` modes)
-
-**Modes:**
-- `combined`: Weighted average of image and text embeddings (default: 80% text, 20% image)
-- `image_only`: Image-only retrieval
-- `text_only`: Text-only retrieval
-
-The output is a standardized JSON format:
 ```json
 {
     "00001": {
-        "retrieved_items": ["signature1", "signature2", ...]
+        "retrieved_items": ["signature1", "signature2", "signature3", ...]
     },
-    ...
+    "00002": {
+        "retrieved_items": ["signature_a", "signature_b", "signature_c", ...]
+    }
 }
 ```
 
-### Step 3: Evaluate Results
+**Format requirements:**
+- Keys are query IDs (5-digit strings: `"00001"`, `"00042"`, etc.)
+- `retrieved_items`: ranked list of image signatures (best match first)
+- Image signatures must match those in `index_signatures.txt`
+- Include up to 50 items per query for full metric calculation
 
-Evaluate results using the provided `pinpoint_metadata.parquet` as ground truth:
+See `standardized_results/` for example files.
 
-```bash
-python src/evaluate.py \
-    --results results.json \
-    --ground_truth pinpoint_metadata.parquet \
-    --output metrics.csv
-```
-
-Or evaluate all JSON files in a directory:
+### Step 2: Run Evaluation
 
 ```bash
-python src/evaluate.py \
-    --results_dir ./results \
-    --ground_truth pinpoint_metadata.parquet \
-    --output all_metrics.csv
+# Install minimal dependencies
+pip install -r requirements-eval.txt
+
+# Evaluate your results
+python evaluate.py --results your_results.json --output your_metrics.csv
 ```
 
-**Note**: The ground truth Parquet file must contain columns:
-- `query_id`: Query identifier (will be normalized to 5-digit format)
-- `positive_candidates`: List/array of relevant item identifiers
-- `negative_candidates`: List/array of negative item identifiers (optional)
-- `query_image_signature`: Image identifier (for linguistic sensitivity)
-- `query_image_signature2`: Optional second image (for linguistic sensitivity)
+Or compare multiple methods at once:
+
+```bash
+python evaluate.py --results_dir ./my_results/ --output comparison.csv
+```
+
+---
+
+## Baseline Results
+
+Results on PinPoint benchmark (sorted by mAP@10):
+
+| Model | Precision@1 | Precision@10 | mAP@10 | NegRecall@10 | mAP@10 (no neg) |
+|-------|-------------|--------------|--------|--------------|-----------------|
+| GPT-5 Text (reranked) | 0.298 | 0.203 | 0.184 | 0.061 | 0.189 |
+| GPT-5 Text (premerge) | 0.288 | 0.197 | 0.179 | 0.089 | 0.190 |
+| BGE-VL MLLM S1 (reranked) | 0.296 | 0.176 | 0.170 | 0.057 | 0.174 |
+| GPT-5 Text (postmerge) | 0.264 | 0.178 | 0.158 | 0.093 | 0.168 |
+| BGE-VL MLLM S1 | 0.233 | 0.142 | 0.131 | 0.087 | 0.141 |
+| BGE-VL MLLM S2 | 0.193 | 0.141 | 0.121 | 0.122 | 0.141 |
+| BGE-VL CLIP Large | 0.184 | 0.127 | 0.110 | 0.101 | 0.120 |
+| MetaCLIP2 (combined) | 0.092 | 0.102 | 0.076 | 0.141 | 0.103 |
+| MetaCLIP2 (text only) | 0.112 | 0.076 | 0.064 | 0.066 | 0.068 |
+| MetaCLIP2 (image only) | 0.009 | 0.052 | 0.033 | 0.219 | 0.058 |
+
+**Key insight:** NegRecall@10 measures how often models retrieve explicit negatives. Higher mAP@10 (no neg) vs mAP@10 indicates sensitivity to hard negatives.
+
+---
 
 ## Output Metrics
 
-The evaluation script computes the following metrics:
+The evaluation script computes:
 
-- **Precision@k**: Fraction of top-k results that are relevant
-- **Recall@k**: Fraction of relevant items retrieved in top-k
-- **mAP@k**: Mean Average Precision at k
-- **NegRecall@k**: Fraction of negative examples retrieved in top-k
-- **mAP@k_noNeg**: mAP@k after removing negatives from retrieved results
-- **delta_mAP@10_noNeg**: Improvement in mAP@10 after removing negatives
-- **ling_sens_range**: Linguistic sensitivity (range of precision@10 across different text instructions for same images)
-- **ling_sens_std**: Linguistic sensitivity (standard deviation)
+| Metric | Description |
+|--------|-------------|
+| Precision@k | Fraction of top-k results that are relevant |
+| Recall@k | Fraction of relevant items found in top-k |
+| mAP@k | Mean Average Precision at k |
+| NegRecall@k | Fraction of hard negatives retrieved in top-k |
+| mAP@k_noNeg | mAP@k after removing negatives from results |
+| delta_mAP@k_noNeg | Improvement when negatives removed |
+| ling_sens_range | Linguistic sensitivity (precision range across paraphrases) |
+| ling_sens_std | Linguistic sensitivity (standard deviation) |
 
-## Model Configuration
+---
 
-The provided MetaCLIP2 example uses:
-- **Model**: `ViT-H-14-worldwide-quickgelu`
-- **Pretrained**: `metaclip2_worldwide`
-- **Embedding dimension**: 1024
-- **Image resolution**: 224x224
+## Dataset Files
 
-You can override these with command-line arguments (see `--help` for each script).
+| File | Description |
+|------|-------------|
+| `pinpoint_licensed.parquet` | Query corpus with ground truth (7,635 queries) |
+| `index_signatures.txt` | Corpus image signatures (109,599 images) |
+| `image_attribution.json` | Image attribution and licensing info |
+| `standardized_results/` | Example result files from baseline methods |
+| `requirements-eval.txt` | Minimal dependencies for evaluation only |
+| `requirements.txt` | Full dependencies for MetaCLIP2 pipeline |
 
-## Extending to Other Retrieval Methods
+### Data Schema (`pinpoint_licensed.parquet`)
 
-This framework is designed to be extensible. To test a different retrieval method:
+| Column | Type | Description |
+|--------|------|-------------|
+| `query_id` | string | Unique query identifier |
+| `query_image_signature` | string | Reference image signature |
+| `query_image_signature2` | string | Optional second reference image |
+| `instruction` | string | Text instruction for the query |
+| `positive_candidates` | list | Ground truth relevant images |
+| `negative_candidates` | list | Hard negative images |
 
-1. **Replace the embedding model**: Modify `src/utils/model_loader.py` to load your model instead of MetaCLIP2
-2. **Update embedding generation**: Modify `src/utils/embeddings.py` to generate embeddings with your model
-3. **Keep the evaluation pipeline**: The `src/evaluate.py` script works with any retrieval method that produces results in the standardized JSON format
+---
 
-The evaluation metrics and ground truth format remain the same regardless of the retrieval method used, making it easy to compare different approaches on the Pinpoint dataset.
+## Full Pipeline (MetaCLIP2 Example)
 
-## Image Loading
+If you want to run the complete retrieval pipeline using the provided MetaCLIP2 implementation:
 
-The scripts support multiple image input formats:
+### Installation
 
-1. **Local file paths**: `/path/to/image.jpg`
-2. **HTTP/HTTPS URLs**: `https://example.com/image.jpg`
-3. **Pinterest-style signatures**: 32+ character hex strings (automatically converted to Pinterest CDN URLs)
+```bash
+# Option 1: Automated setup
+bash setup.sh
 
-## Checkpointing
+# Option 2: Manual installation
+pip install torch torchvision  # Add --index-url for CUDA/CPU specific
+pip install "open-clip-torch @ git+https://github.com/mlfoundations/open_clip.git@main"
+pip install faiss-cpu  # or faiss-gpu
+pip install numpy pandas pyarrow pillow requests tqdm
+```
 
-Both `src/build_faiss_index.py` and `src/run_retrieval.py` support checkpointing to resume interrupted runs:
+### Run Pipeline
 
-- Index building: Checkpoints are saved every N batches (default: 1000)
-- Retrieval: Checkpoints are saved every N queries (default: 100)
+```bash
+# Step 1: Build FAISS index (~109k images)
+python build_faiss_index.py --output_dir ./indices/metaclip2
 
-To disable checkpoint resumption, use `--no_resume` flag in `src/run_retrieval.py`.
+# Step 2: Run retrieval
+python run_retrieval.py \
+    --index_dir ./indices/metaclip2 \
+    --output_file results.json \
+    --mode combined \
+    --alpha 0.8
 
-## Notes
+# Step 3: Evaluate
+python evaluate.py --results results.json --output metrics.csv
+```
 
-- The scripts use L2-normalized embeddings and inner product (cosine similarity) for retrieval
-- Multi-image queries are handled by averaging the image embeddings
-- Combined mode uses weighted averaging: `alpha * text_emb + (1 - alpha) * image_emb`
-- All embeddings are normalized before and after averaging
+**Retrieval modes:**
+- `combined`: Weighted average of image + text embeddings (default: 80% text, 20% image)
+- `text_only`: Text embedding only
+- `image_only`: Image embedding only
+
+### Checkpointing
+
+Both scripts support checkpointing for interrupted runs:
+- Index building: Saves every 1000 batches
+- Retrieval: Saves every 100 queries
+
+Use `--no_resume` to start fresh.
+
+---
+
+## Extending to Other Models
+
+**Option A (Recommended):** Use your own retrieval pipeline, output results in the JSON format above, and run `evaluate.py`.
+
+**Option B:** Modify the provided code:
+- `utils/model_loader.py` - Replace embedding model
+- `utils/embeddings.py` - Update embedding generation
+
+---
+
+## Project Structure
+
+```
+pinpoint-dataset/
+├── evaluate.py              # Evaluation script (most users need only this)
+├── build_faiss_index.py     # Build FAISS index (MetaCLIP2 example)
+├── run_retrieval.py         # Run retrieval (MetaCLIP2 example)
+├── utils/                   # Utility modules
+├── pinpoint_licensed.parquet
+├── index_signatures.txt
+├── standardized_results/
+├── requirements.txt         # Full dependencies (MetaCLIP2 pipeline)
+├── requirements-eval.txt    # Minimal dependencies (evaluation only)
+└── setup.sh
+```
+
+---
+
+## License
+
+- **Code**: Apache 2.0 (see CODE_LICENSE.TXT)
+- **Data**: CC BY 4.0 (see DATA_LICENSE.TXT)
+
+Note: Images are re-hosted on Pinterest CDN. Individual image licenses are documented in `image_attribution.json`. Verify licensing for your use case.
+
+---
+
+## Citation
+
+```bibtex
+@misc{mahadev2026pinpointevaluationcomposedimage,
+  title={PinPoint: Evaluation of Composed Image Retrieval with Explicit Negatives, Multi-Image Queries, and Paraphrase Testing},
+  author={Rohan Mahadev and Joyce Yuan and Patrick Poirson and David Xue and Hao-Yu Wu and Dmitry Kislyuk},
+  year={2026},
+  eprint={2603.04598},
+  archivePrefix={arXiv},
+  primaryClass={cs.CV},
+  url={https://arxiv.org/abs/2603.04598},
+}
+```
+
+---
+
+## Contact
+
+For questions or issues, please open a GitHub issue.

@@ -220,9 +220,9 @@ def main():
     parser.add_argument(
         "--query_file",
         type=str,
-        default="pinpoint_metadata.parquet",
+        default="pinpoint_licensed.parquet",
         help=("Path to parquet file containing query corpus. "
-              "Default: pinpoint_metadata.parquet"))
+              "Default: pinpoint_licensed.parquet"))
     parser.add_argument(
         "--index_dir",
         type=str,

@@ -211,9 +211,9 @@ def main():
     parser.add_argument(
         "--ground_truth",
         type=str,
-        default="pinpoint_metadata.parquet",
+        default="pinpoint_licensed.parquet",
         help=("Path to ground truth parquet file. "
-              "Default: pinpoint_metadata.parquet")
+              "Default: pinpoint_licensed.parquet")
     )
     parser.add_argument(
         "--output",

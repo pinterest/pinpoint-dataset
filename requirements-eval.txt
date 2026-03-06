@@ -1,0 +1,6 @@
+# Minimal requirements for running evaluation only
+# Install with: pip install -r requirements-eval.txt
+
+numpy>=1.23.0
+pandas>=1.5.0
+pyarrow>=10.0.0
