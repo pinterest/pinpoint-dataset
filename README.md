@@ -59,8 +59,6 @@ url = signature_to_url(sig)
 
 ## Evaluate Your Model
 
-**Most researchers will use this section.** If you have your own retrieval system, skip directly to evaluation.
-
 ### Step 1: Generate Results in the Required Format
 
 Your results file must be a JSON file with this structure:
@@ -246,7 +244,9 @@ pinpoint-dataset/
 - **Code**: Apache 2.0 (see CODE_LICENSE.TXT)
 - **Data**: CC BY 4.0 (see DATA_LICENSE.TXT)
 
-Note: Images are re-hosted on Pinterest CDN. Individual image licenses are documented in `image_attribution.json`. Verify licensing for your use case.
+Note: Images are re-hosted on Pinterest CDN. Individual image licenses are documented in `image_attribution.json`.
+
+The dataset is released under CC BY 4.0 [see DATA_LICENSE.TXT]. Note that although we verified that the images within the dataset were listed as having a CC BY 2.0 license, we make no representations or warranties regarding the license status of each image. You should verify your ability to use each image for yourself.
 
 ---
 
