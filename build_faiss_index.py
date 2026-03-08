@@ -120,7 +120,7 @@ def build_faiss_index(
                 valid_images = images[valid_indices].to(device)
 
                 try:
-                    with torch.cuda.amp.autocast():
+                    with torch.amp.autocast(device.type):
                         image_features = model.encode_image(valid_images)
                         image_features = F.normalize(image_features, dim=-1)
 

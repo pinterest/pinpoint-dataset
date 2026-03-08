@@ -15,7 +15,7 @@ def normalize_query_id(query_id) -> str:
     """
     if isinstance(query_id, str):
         if query_id.startswith("query_"):
-            return query_id.replace("query_", "").zfill(5)
+            return query_id[6:].zfill(5)
         return query_id.zfill(5)
     return str(query_id).zfill(5)
 

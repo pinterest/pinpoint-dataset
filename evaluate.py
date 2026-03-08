@@ -100,8 +100,6 @@ def evaluate_model(
         matched += 1
         query_data = results[query_id]
         retrieved = query_data.get("retrieved_items", [])
-        if not retrieved:
-            continue
 
         # Ground truth lists
         relevant = row["positive_candidates"]

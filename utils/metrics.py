@@ -8,12 +8,12 @@ def calculate_metrics_at_k(
 ) -> Dict[str, float]:
     """
     Calculate precision, recall, and Average Precision (AP) at k.
-    
+
     Args:
         retrieved: List of retrieved item identifiers
         relevant: List of relevant item identifiers
         k: Cutoff value for top-k metrics
-        
+
     Returns:
         Dictionary with 'precision', 'recall', and 'ap' keys
     """
@@ -26,8 +26,10 @@ def calculate_metrics_at_k(
             "ap": 0.0
         }
 
+    relevant_set = set(relevant)
+
     # Calculate precision@k
-    hits = sum(1 for item in retrieved_k if item in relevant)
+    hits = sum(1 for item in retrieved_k if item in relevant_set)
     precision = hits / k if k > 0 else 0.0
 
     # Calculate recall@k
@@ -37,7 +39,7 @@ def calculate_metrics_at_k(
     ap = 0.0
     hits_so_far = 0
     for i, item in enumerate(retrieved_k):
-        if item in relevant:
+        if item in relevant_set:
             hits_so_far += 1
             ap += hits_so_far / (i + 1)
 
@@ -67,7 +69,8 @@ def calculate_neg_recall_at_k(
     if not negative:
         return 0.0
 
+    negative_set = set(negative)
     retrieved_k = retrieved[:k]
-    neg_hits = sum(1 for item in retrieved_k if item in negative)
-    return neg_hits / min(len(negative), k) if negative else 0.0
+    neg_hits = sum(1 for item in retrieved_k if item in negative_set)
+    return neg_hits / min(len(negative), k)
 
