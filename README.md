@@ -100,6 +100,107 @@ python evaluate.py --results_dir ./my_results/ --output comparison.csv
 
 ---
 
+## Rerank Your Results with a VLM
+
+The paper proposes a training-free reranking method that uses an off-the-shelf Vision-Language Model (VLM) to rescore retrieval candidates. For each candidate, the VLM is asked whether it is a precise match for the query image + instruction, and the logit probabilities of the "True" / "False" tokens are used to compute a relevance score:
+
+```
+score = P(True) / (P(True) + P(False))
+```
+
+Candidates are then sorted by this score. This consistently improves results across different retrieval methods (see the baseline table below — rows marked "reranked").
+
+### Prerequisites
+
+You need a VLM that exposes an **OpenAI-compatible chat completions API with `logprobs` support**. Any of these will work:
+
+| Serving framework | Example command |
+|---|---|
+| [vLLM](https://github.com/vllm-project/vllm) | `vllm serve Qwen/Qwen2.5-VL-7B-Instruct` |
+| [SGLang](https://github.com/sgl-project/sglang) | `python -m sglang.launch_server --model Qwen/Qwen2.5-VL-7B-Instruct` |
+| [Ollama](https://ollama.com/) | `ollama serve` (after `ollama pull qwen2.5-vl:7b`) |
+
+The default and recommended model is **Qwen2.5-VL-7B-Instruct** (requires ~16 GB VRAM). Other VLMs that support logprobs in their API will also work.
+
+### Step 1: Start your VLM server
+
+```bash
+# Example with vLLM (adjust for your setup)
+pip install vllm
+vllm serve Qwen/Qwen2.5-VL-7B-Instruct --port 8000
+```
+
+Verify the server is running:
+
+```bash
+curl http://localhost:8000/v1/models
+```
+
+### Step 2: Run the reranker
+
+```bash
+pip install -r requirements-eval.txt  # pandas, numpy, tqdm, requests
+
+python rerank.py \
+    --results your_results.json \
+    --output your_reranked_results.json \
+    --api_base http://localhost:8000/v1 \
+    --model Qwen/Qwen2.5-VL-7B-Instruct \
+    --top_n 20
+```
+
+| Flag | Description | Default |
+|------|-------------|---------|
+| `--results` | Your input results JSON file (required) | — |
+| `--output` | Output path for reranked results (required) | — |
+| `--ground_truth` | Path to the PinPoint parquet file | `pinpoint_licensed.parquet` |
+| `--api_base` | Base URL of your OpenAI-compatible API | `http://localhost:8000/v1` |
+| `--model` | Model name to send to the API | `Qwen/Qwen2.5-VL-7B-Instruct` |
+| `--top_n` | How many top candidates to rerank per query | `20` |
+| `--timeout` | API request timeout in seconds | `30` |
+
+The output file is in the **exact same JSON format** as the input, so you can evaluate it directly:
+
+```bash
+python evaluate.py --results your_reranked_results.json --output reranked_metrics.csv
+```
+
+### Using a custom VLM backend
+
+If your VLM is not served behind an OpenAI-compatible API, you can subclass `VLMClient` in `rerank.py` and implement a single method:
+
+```python
+from rerank import VLMClient, build_messages, compute_relevance_score
+
+class MyClient(VLMClient):
+    def score_candidate(self, messages):
+        # `messages` is a list of chat messages (OpenAI format) containing
+        # the system prompt, reference image, candidate image, and instructions.
+        #
+        # Call your VLM however you like. You need to return the logit-based
+        # relevance score, or None on failure.
+        #
+        # The key requirement: generate exactly 1 token with logprobs enabled,
+        # then extract the "True" and "False" log-probabilities and call:
+        return compute_relevance_score(top_logprobs)
+```
+
+Then use it programmatically:
+
+```python
+from rerank import rerank_results
+import pandas as pd, json
+
+client = MyClient(...)
+results = json.load(open("your_results.json"))
+gt_df = pd.read_parquet("pinpoint_licensed.parquet")
+
+reranked = rerank_results(client, results, gt_df, top_n=20)
+json.dump(reranked, open("reranked_results.json", "w"), indent=2)
+```
+
+---
+
 ## Baseline Results
 
 Results on PinPoint benchmark (sorted by mAP@10):
@@ -226,6 +327,7 @@ Use `--no_resume` to start fresh.
 ```
 pinpoint-dataset/
 ├── evaluate.py              # Evaluation script (most users need only this)
+├── rerank.py                # VLM reranking script
 ├── build_faiss_index.py     # Build FAISS index (MetaCLIP2 example)
 ├── run_retrieval.py         # Run retrieval (MetaCLIP2 example)
 ├── utils/                   # Utility modules
