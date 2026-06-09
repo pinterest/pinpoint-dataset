@@ -355,14 +355,13 @@ The dataset is released under CC BY 4.0 [see DATA_LICENSE.TXT]. Note that althou
 ## Citation
 
 ```bibtex
-@misc{mahadev2026pinpointevaluationcomposedimage,
-  title={PinPoint: Evaluation of Composed Image Retrieval with Explicit Negatives, Multi-Image Queries, and Paraphrase Testing},
-  author={Rohan Mahadev and Joyce Yuan and Patrick Poirson and David Xue and Hao-Yu Wu and Dmitry Kislyuk},
-  year={2026},
-  eprint={2603.04598},
-  archivePrefix={arXiv},
-  primaryClass={cs.CV},
-  url={https://arxiv.org/abs/2603.04598},
+@InProceedings{Mahadev_2026_CVPR,
+    author    = {Mahadev, Rohan and Yuan, Joyce and Poirson, Patrick and Xue, David and Wu, Hao-Yu and Kislyuk, Dmitry},
+    title     = {PinPoint: Evaluation of Composed Image Retrieval with Explicit Negatives, Multi-Image Queries, and Paraphrase Testing},
+    booktitle = {Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition (CVPR)},
+    month     = {June},
+    year      = {2026},
+    pages     = {9742-9751}
 }
 ```
 
